@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <style>
+        :root {
+            --admin-sidebar-bg: #0f172a;
+            --admin-sidebar-hover: #1e293b;
+            --admin-sidebar-text: #f8fafc;
+            --admin-sidebar-muted: #94a3b8;
+        }
+
+        .navbar-vertical {
+            background-color: var(--admin-sidebar-bg);
+        }
+
+        .navbar-vertical .navbar-nav .nav-link {
+            color: var(--admin-sidebar-text);
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .navbar-vertical .navbar-nav .nav-link .nav-link-icon {
+            color: var(--admin-sidebar-muted);
+        }
+
+        .navbar-vertical .navbar-nav .nav-link.active,
+        .navbar-vertical .navbar-nav .nav-link:hover,
+        .navbar-vertical .navbar-nav .nav-link:focus {
+            background-color: var(--admin-sidebar-hover);
+            color: var(--admin-sidebar-text);
+        }
+
+        .navbar-vertical .navbar-nav .nav-link.active .nav-link-icon,
+        .navbar-vertical .navbar-nav .nav-link:hover .nav-link-icon,
+        .navbar-vertical .navbar-nav .nav-link:focus .nav-link-icon {
+            color: var(--admin-sidebar-text);
+        }
+
+        .navbar-vertical .navbar-brand,
+        .navbar-vertical .navbar-brand-autodark,
+        .navbar-vertical .navbar-brand a {
+            color: var(--admin-sidebar-text);
+        }
+
+        .navbar-vertical .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+    <div class="wrapper min-vh-100">
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark bg-dark shadow-sm">
+            <div class="container-fluid">
+                {% if request.app.logo_url %}
+                    <h1 class="navbar-brand navbar-brand-autodark">
+                        <a href="{{ request.app.admin_path }}">
+                            <img
+                                    src="{{ request.app.logo_url }}"
+                                    width="110"
+                                    height="32"
+                                    alt="Tabler"
+                                    class="navbar-brand-image"
+                            />
+                        </a>
+                    </h1>
+                {% endif %}
+                <div class="collapse navbar-collapse" id="navbar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        {% for resource in resources %}
+                            {% if resource.type == 'link' %}
+                                {% include 'components/link.html' %}
+                            {% elif resource.type == 'model' %}
+                                {% include 'components/model.html' %}
+                            {% elif resource.type == 'dropdown' %}
+                                {% include 'components/dropdown.html' %}
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </aside>
+        <div class="page-wrapper min-vh-100">
+            <header
+                    class="navbar navbar-expand-md navbar-light d-none d-lg-flex d-print-none"
+            >
+                <div class="container-fluid">
+                    <button
+                            class="navbar-toggler"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#navbar-menu"
+                    >
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="navbar-nav flex-row order-md-last">
+                        {% if request.app.language_switch %}
+                            {% include "components/language.html" %}
+                        {% endif %}
+                        {% if request.app.login_provider %}
+                            {% include "providers/login/avatar.html" %}
+                        {% endif %}
+                    </div>
+                    <div></div>
+                </div>
+            </header>
+            <div class="container-fluid">
+                <div class="page-header d-print-none">
+                    {% block page_header %}
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <div class="page-pretitle">{{ page_pre_title or '' }}</div>
+                                <h2 class="page-title">{{ page_title or '' }}</h2>
+                            </div>
+                        </div>
+                        {% block page_title_actions %}{% endblock %}
+                    {% endblock %}
+                </div>
+            </div>
+            <div class="page-body flex-grow-1">
+                <div class="container-fluid">
+                    <div class="row row-deck row-cards">
+                        {% block page_body %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+            {% block footer %}
+                {% include "components/footer.html" %}
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}
