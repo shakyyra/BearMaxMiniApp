@@ -1,34 +1,42 @@
 import { useMemo } from "react";
 import { FORM_SCHEMAS } from "../../config/formSchemas";
 import { DynamicForm } from "../DynamicForm";
-import { FormValues } from "../../types/forms";
+import { FieldConfig, FormValues } from "../../types/forms";
 
 interface MasterclassDetailsScreenProps {
   cityOptions: { value: string; label: string }[];
   educationOptions: { value: string; label: string }[];
   onSubmit: (values: FormValues) => void | Promise<void>;
+  extraFields?: FieldConfig[];
 }
 
 export function MasterclassDetailsScreen({
   cityOptions,
   educationOptions,
   onSubmit,
+  extraFields = [],
 }: MasterclassDetailsScreenProps) {
   const formStep = useMemo(() => {
-    const template = FORM_SCHEMAS.masterclass.steps[1];
+    const template = FORM_SCHEMAS.masterclass.steps[0];
+    const mappedFields = template.fields.map((field) => {
+      if (field.name === "city") {
+        return { ...field, options: cityOptions };
+      }
+      if (field.name === "education") {
+        return { ...field, options: educationOptions };
+      }
+      return field;
+    });
+
+    const mergedFields = extraFields.length
+      ? [...extraFields, ...mappedFields]
+      : mappedFields;
+
     return {
       ...template,
-      fields: template.fields.map((field) => {
-        if (field.name === "city") {
-          return { ...field, options: cityOptions };
-        }
-        if (field.name === "education") {
-          return { ...field, options: educationOptions };
-        }
-        return field;
-      }),
+      fields: mergedFields,
     };
-  }, [cityOptions, educationOptions]);
+  }, [cityOptions, educationOptions, extraFields]);
 
   return <DynamicForm step={formStep} onSubmit={onSubmit} />;
 }

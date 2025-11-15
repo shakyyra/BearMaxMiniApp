@@ -5,55 +5,11 @@ export const FORM_SCHEMAS = {
     formId: 'masterclass',
     steps: [
       {
-        stepId: 'form',
+        stepId: 'details',
         title: 'Форма мастер-класса',
         subtitle: 'Для отправки заявки нужно заполнить все поля',
-        buttonText: 'Продолжить',
+        buttonText: 'Отправить заявку',
         fields: [
-          {
-            name: 'lastName',
-            type: 'text',
-            placeholder: 'Фамилия',
-            defaultValue: '',
-            validation: {
-              required: true,
-              minLength: 2,
-              message: 'Введите фамилию (минимум 2 символа)',
-            },
-          },
-          {
-            name: 'firstName',
-            type: 'text',
-            placeholder: 'Имя',
-            defaultValue: '',
-            validation: {
-              required: true,
-              minLength: 2,
-              message: 'Введите имя (минимум 2 символа)',
-            },
-          },
-          {
-            name: 'patronymic',
-            type: 'text',
-            placeholder: 'Отчество',
-            defaultValue: '',
-            validation: {
-              required: true,
-              minLength: 2,
-              message: 'Введите отчество (минимум 2 символа)',
-            },
-          },
-          {
-            name: 'phone',
-            type: 'tel',
-            placeholder: '+ 7 900 000 00 00',
-            defaultValue: '',
-            validation: {
-              required: true,
-              pattern: /^[\d\s\+\-\(\)]+$/,
-              message: 'Введите корректный номер телефона',
-            },
-          },
           {
             name: 'email',
             type: 'email',
@@ -65,14 +21,6 @@ export const FORM_SCHEMAS = {
               message: 'Введите корректный email',
             },
           },
-        ],
-      },
-      {
-        stepId: 'details',
-        title: 'Форма мастер-класса',
-        subtitle: 'Для отправки заявки нужно заполнить все поля',
-        buttonText: 'Отправить заявку',
-        fields: [
           {
             name: 'city',
             type: 'select',
@@ -125,55 +73,11 @@ export const FORM_SCHEMAS = {
     formId: 'mentoring',
     steps: [
       {
-        stepId: 'form',
+        stepId: 'details',
         title: 'Форма будущего наставника',
         subtitle: 'Для отправки заявки нужно заполнить все поля',
-        buttonText: 'Продолжить',
+        buttonText: 'Отправить заявку',
         fields: [
-          {
-            name: 'lastName',
-            type: 'text',
-            placeholder: 'Фамилия',
-            defaultValue: '',
-            validation: {
-              required: true,
-              minLength: 2,
-              message: 'Введите фамилию (минимум 2 символа)',
-            },
-          },
-          {
-            name: 'firstName',
-            type: 'text',
-            placeholder: 'Имя',
-            defaultValue: '',
-            validation: {
-              required: true,
-              minLength: 2,
-              message: 'Введите имя (минимум 2 символа)',
-            },
-          },
-          {
-            name: 'middleName',
-            type: 'text',
-            placeholder: 'Отчество',
-            defaultValue: '',
-            validation: {
-              required: true,
-              minLength: 2,
-              message: 'Введите отчество (минимум 2 символа)',
-            },
-          },
-          {
-            name: 'phone',
-            type: 'tel',
-            placeholder: '+ 7 900 000 00 00',
-            defaultValue: '',
-            validation: {
-              required: true,
-              pattern: /^[\d\s\+\-\(\)]+$/,
-              message: 'Введите корректный номер телефона',
-            },
-          },
           {
             name: 'email',
             type: 'email',
@@ -185,25 +89,6 @@ export const FORM_SCHEMAS = {
               message: 'Введите корректный email',
             },
           },
-          {
-            name: 'maxAccount',
-            type: 'url',
-            placeholder: 'Ссылка на аккаунт Max',
-            defaultValue: '',
-            validation: {
-              required: true,
-              pattern: /^https?:\/\/.+/,
-              message: 'Введите корректную ссылку',
-            },
-          },
-        ],
-      },
-      {
-        stepId: 'details',
-        title: 'Форма будущего наставника',
-        subtitle: 'Для отправки заявки нужно заполнить все поля',
-        buttonText: 'Отправить заявку',
-        fields: [
           {
             name: 'city',
             type: 'select',

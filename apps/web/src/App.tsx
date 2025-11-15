@@ -3,9 +3,7 @@ import { AnimatePresence } from "motion/react";
 import { Header } from "./components/Header";
 import { BottomNav, TabType } from "./components/BottomNav";
 import { FundsScreen } from "./components/screens/FundsScreen";
-import { MasterclassFormScreen } from "./components/screens/MasterclassFormScreen";
 import { MasterclassDetailsScreen } from "./components/screens/MasterclassDetailsScreen";
-import { MentoringFormScreen } from "./components/screens/MentoringFormScreen";
 import { MentoringDetailsScreen } from "./components/screens/MentoringDetailsScreen";
 import { Loader } from "./components/Loader";
 import { FundsBanner } from "./components/banners/FundsBanner";
@@ -20,9 +18,10 @@ import fundsModalImage from "@/assets/funds-help-illustration.png";
 import masterclassModalImage from "@/assets/masterclass-illustration.png";
 import mentoringModalImage from "@/assets/mentoring-illustration.png";
 import { useImagePreloader } from "./hooks/useImagePreloader";
+import { useMaxBridge } from "./hooks/useMaxBridge";
 import { api } from "./services/api";
 import type { City, EducationLevel } from "./types/api";
-import type { FormValues } from "./types/forms";
+import type { FieldConfig, FormValues } from "./types/forms";
 
 const DEFAULT_ACCOUNT_ID = Number(import.meta.env?.VITE_DEFAULT_ACCOUNT_ID ?? "1");
 const VISITED_TABS_STORAGE_KEY = 'maxappVisitedTabs';
@@ -54,8 +53,6 @@ const getInitialVisitedTabs = (): Set<TabType> => {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('funds');
-  const [masterclassStep, setMasterclassStep] = useState<'form' | 'details'>('form');
-  const [mentoringStep, setMentoringStep] = useState<'form' | 'details'>('form');
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(() => {
@@ -74,11 +71,64 @@ export default function App() {
   const [educationLevels, setEducationLevels] = useState<EducationLevel[]>([]);
   const [commonDataReady, setCommonDataReady] = useState(false);
   const [commonError, setCommonError] = useState<string | null>(null);
-  const [masterclassFormValues, setMasterclassFormValues] = useState<FormValues | null>(null);
-  const [mentoringFormValues, setMentoringFormValues] = useState<FormValues | null>(null);
   
   // Track which tabs have been visited
   const [visitedTabs, setVisitedTabs] = useState<Set<TabType>>(() => getInitialVisitedTabs());
+  const { user: bridgeUser, phone: bridgePhone, needsPhoneInput } = useMaxBridge();
+
+  const manualPhoneFields = useMemo<FieldConfig[]>(() => {
+    if (!needsPhoneInput) {
+      return [];
+    }
+    return [
+      {
+        name: 'phone',
+        type: 'tel',
+        placeholder: '+ 7 900 000 00 00',
+        defaultValue: '',
+        validation: {
+          required: true,
+          pattern: /^[\d\s\+\-\(\)]+$/,
+          message: 'Введите корректный номер телефона',
+        },
+      },
+    ];
+  }, [needsPhoneInput]);
+
+  const userContext = useMemo(() => {
+    const firstName = bridgeUser?.first_name?.trim() || 'MAX';
+    const lastName = bridgeUser?.last_name?.trim() || 'User';
+    const accountIdCandidate = Number(bridgeUser?.id ?? DEFAULT_ACCOUNT_ID);
+    const accountId = Number.isNaN(accountIdCandidate) ? DEFAULT_ACCOUNT_ID : accountIdCandidate;
+    const username = bridgeUser?.username?.replace(/^@/, '') || '';
+    return { firstName, lastName, accountId, username };
+  }, [bridgeUser]);
+
+  const resolveCommonFields = useCallback(
+    (values: FormValues) => {
+      const cityId = Number(values.city);
+      const educationId = Number(values.education);
+      if (Number.isNaN(cityId) || Number.isNaN(educationId)) {
+        alert('Выберите город и образование из списка.');
+        return null;
+      }
+
+      const email = (values.email || '').trim();
+      if (!email) {
+        alert('Укажите email, чтобы мы могли связаться с вами.');
+        return null;
+      }
+
+      const phoneValue = bridgePhone || (values.phone ? values.phone.trim() : '');
+      if (!phoneValue) {
+        alert('Поделитесь номером телефона в MAX или заполните поле номера.');
+        return null;
+      }
+
+      return { cityId, educationId, email, phoneValue };
+    },
+    [bridgePhone]
+  );
 
   useEffect(() => {
     const loadCommonData = async () => {
@@ -166,94 +216,64 @@ export default function App() {
     [educationLevels]
   );
 
-  const handleMasterclassFormSubmit = useCallback(
-    (values: FormValues) => {
-      setMasterclassFormValues(values);
-      setMasterclassStep('details');
-    },
-    []
-  );
-
   const handleMasterclassDetailsSubmit = useCallback(
     async (values: FormValues) => {
-      if (!masterclassFormValues) {
-        alert('Не удалось определить данные формы. Пожалуйста, заполните первый шаг повторно.');
-        setMasterclassStep('form');
+      const commonFields = resolveCommonFields(values);
+      if (!commonFields) {
         return;
       }
 
       try {
-        const cityId = Number(values.city);
-        const educationId = Number(values.education);
-        if (Number.isNaN(cityId) || Number.isNaN(educationId)) {
-          alert('Выберите город и образование из списка.');
-          return;
-        }
-
+        const { cityId, educationId, email, phoneValue } = commonFields;
         await api.createMasterclassRequest({
-          first_name: masterclassFormValues.firstName || '',
-          last_name: masterclassFormValues.lastName || '',
-          middle_name: masterclassFormValues.patronymic || '',
-          phone: masterclassFormValues.phone || '',
-          email: masterclassFormValues.email || '',
+          first_name: userContext.firstName,
+          last_name: userContext.lastName,
+          middle_name: null,
+          phone: phoneValue,
+          email,
           city_id: cityId,
           education_id: educationId,
           description: values.description || '',
-          account_id: DEFAULT_ACCOUNT_ID,
+          account_id: userContext.accountId,
         });
         alert('Заявка на мастер-класс отправлена!');
-        setMasterclassFormValues(null);
-        setMasterclassStep('form');
       } catch (error) {
         console.error(error);
         alert('Не удалось отправить заявку. Попробуйте снова.');
       }
     },
-    [masterclassFormValues]
+    [resolveCommonFields, userContext]
   );
-
-  const handleMentoringFormSubmit = useCallback((values: FormValues) => {
-    setMentoringFormValues(values);
-    setMentoringStep('details');
-  }, []);
 
   const handleMentoringDetailsSubmit = useCallback(
     async (values: FormValues) => {
-      if (!mentoringFormValues) {
-        alert('Не удалось определить данные формы. Пожалуйста, заполните первый шаг повторно.');
-        setMentoringStep('form');
+      const commonFields = resolveCommonFields(values);
+      if (!commonFields) {
         return;
       }
 
       try {
-        const cityId = Number(values.city);
-        const educationId = Number(values.education);
-        if (Number.isNaN(cityId) || Number.isNaN(educationId)) {
-          alert('Выберите город и образование из списка.');
-          return;
-        }
-
+        const { cityId, educationId, email, phoneValue } = commonFields;
+        const maxAccountUrl = userContext.username ? `https://max.ru/${userContext.username}` : '';
         await api.createMentorshipRequest({
-          first_name: mentoringFormValues.firstName || '',
-          last_name: mentoringFormValues.lastName || '',
-          middle_name: mentoringFormValues.middleName || '',
-          phone: mentoringFormValues.phone || '',
-          email: mentoringFormValues.email || '',
-          account_id: DEFAULT_ACCOUNT_ID,
+          first_name: userContext.firstName,
+          last_name: userContext.lastName,
+          middle_name: null,
+          phone: phoneValue,
+          email,
+          account_id: userContext.accountId,
           city_id: cityId,
           education_id: educationId,
           description: values.description || '',
-          max_account_url: mentoringFormValues.maxAccount || '',
+          max_account_url: maxAccountUrl,
         });
         alert('Заявка наставника отправлена!');
-        setMentoringFormValues(null);
-        setMentoringStep('form');
       } catch (error) {
         console.error(error);
         alert('Не удалось отправить заявку. Попробуйте снова.');
       }
     },
-    [mentoringFormValues]
+    [resolveCommonFields, userContext]
   );
 
   // Get the banner component based on active tab
@@ -273,12 +293,6 @@ export default function App() {
   // Handle tab change
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
-    if (tab === 'masterclass') {
-      setMasterclassStep('form');
-    }
-    if (tab === 'mentoring') {
-      setMentoringStep('form');
-    }
   };
 
   if (isLoading) {
@@ -301,25 +315,21 @@ export default function App() {
       {/* Content based on active tab */}
       <AnimatePresence mode="wait">
         {activeTab === 'funds' && <FundsScreen key="funds" />}
-        {activeTab === 'masterclass' && masterclassStep === 'form' && (
-          <MasterclassFormScreen key="masterclass-form" onSubmit={handleMasterclassFormSubmit} />
-        )}
-        {activeTab === 'masterclass' && masterclassStep === 'details' && (
+        {activeTab === 'masterclass' && (
           <MasterclassDetailsScreen
             key="masterclass-details"
             cityOptions={cityOptions}
             educationOptions={educationOptions}
+            extraFields={manualPhoneFields}
             onSubmit={handleMasterclassDetailsSubmit}
           />
         )}
-        {activeTab === 'mentoring' && mentoringStep === 'form' && (
-          <MentoringFormScreen key="mentoring-form" onSubmit={handleMentoringFormSubmit} />
-        )}
-        {activeTab === 'mentoring' && mentoringStep === 'details' && (
+        {activeTab === 'mentoring' && (
           <MentoringDetailsScreen
             key="mentoring-details"
             cityOptions={cityOptions}
             educationOptions={educationOptions}
+            extraFields={manualPhoneFields}
             onSubmit={handleMentoringDetailsSubmit}
           />
         )}
